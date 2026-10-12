@@ -6,6 +6,8 @@
   }
 
   const STORAGE_KEY = 'jarvis-tasks-v1';
+  const THEME_KEY = 'jarvis-tasks-theme';
+  const DEFAULT_THEME = 'jarvis';
 
   /** @type {{id:string, title:string, date:string, priority:'low'|'normal'|'high', notes:string, done:boolean}[]} */
   let tasks = loadTasks();
@@ -63,6 +65,48 @@
   const fieldPriority = document.getElementById('field-priority');
   const fieldNotes = document.getElementById('field-notes');
   const btnDelete = document.getElementById('btn-delete');
+
+  const btnSettings = document.getElementById('btn-settings');
+  const settingsModal = document.getElementById('settings-modal');
+  const settingsClose = document.getElementById('settings-close');
+  const themeCards = document.querySelectorAll('.theme-card');
+
+  // ---------- theme ----------
+  function applyTheme(theme) {
+    document.documentElement.dataset.theme = theme;
+    themeCards.forEach(card => {
+      card.classList.toggle('active', card.dataset.themeChoice === theme);
+    });
+  }
+
+  function loadTheme() {
+    let theme = DEFAULT_THEME;
+    try {
+      theme = localStorage.getItem(THEME_KEY) || DEFAULT_THEME;
+    } catch {}
+    applyTheme(theme);
+  }
+
+  themeCards.forEach(card => {
+    card.addEventListener('click', () => {
+      const theme = card.dataset.themeChoice;
+      applyTheme(theme);
+      try { localStorage.setItem(THEME_KEY, theme); } catch {}
+    });
+  });
+
+  function openSettings() {
+    applyTheme(document.documentElement.dataset.theme || DEFAULT_THEME);
+    settingsModal.hidden = false;
+  }
+  function closeSettings() {
+    settingsModal.hidden = true;
+  }
+
+  btnSettings.addEventListener('click', openSettings);
+  settingsClose.addEventListener('click', closeSettings);
+  settingsModal.addEventListener('click', (e) => { if (e.target === settingsModal) closeSettings(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !settingsModal.hidden) closeSettings(); });
 
   // ---------- clock ----------
   function tickClock() {
@@ -273,5 +317,6 @@
   });
 
   // ---------- init ----------
+  loadTheme();
   renderAll();
 })();

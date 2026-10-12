@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>J.A.R.V.I.S. // TASK INTERFACE</title>
+<script>
+  try {
+    var savedTheme = localStorage.getItem('jarvis-tasks-theme');
+    if (savedTheme) document.documentElement.dataset.theme = savedTheme;
+  } catch (e) {}
+</script>
 
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -15,7 +21,7 @@
 <meta name="apple-mobile-web-app-title" content="JARVIS">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&family=Hina+Mincho&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -33,13 +39,15 @@
         <div class="arc-ring ring2"></div>
       </div>
       <div class="brand-text">
-        <h1>J.A.R.V.I.S.</h1>
         <span>TASK MANAGEMENT INTERFACE</span>
       </div>
     </div>
-    <div class="status-block">
-      <div id="clock" class="clock">00:00:00</div>
-      <div id="dateline" class="dateline">--</div>
+    <div class="topbar-right">
+      <div class="status-block">
+        <div id="clock" class="clock">00:00:00</div>
+        <div id="dateline" class="dateline">--</div>
+      </div>
+      <button id="btn-settings" class="btn-icon settings-trigger" title="Einstellungen">⚙</button>
     </div>
   </header>
 
@@ -134,6 +142,38 @@
         <button type="submit" class="btn-hud primary">SPEICHERN</button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div id="settings-modal" class="modal-overlay" hidden>
+  <div class="modal settings-modal">
+    <div class="modal-header">
+      <h3>EINSTELLUNGEN</h3>
+      <button id="settings-close" class="btn-icon">&times;</button>
+    </div>
+
+    <div class="settings-section">
+      <h4>ANSICHT</h4>
+      <p class="settings-hint">Design der Oberfläche wählen</p>
+      <div class="theme-grid">
+        <button type="button" class="theme-card" data-theme-choice="jarvis">
+          <span class="theme-swatch swatch-jarvis"></span>
+          <span class="theme-name">J.A.R.V.I.S.</span>
+          <span class="theme-desc">Sci-Fi HUD</span>
+        </button>
+        <button type="button" class="theme-card" data-theme-choice="demonslayer">
+          <span class="theme-swatch swatch-demonslayer"></span>
+          <span class="theme-name">Demon Slayer</span>
+          <span class="theme-desc">Anime</span>
+        </button>
+        <button type="button" class="theme-card" data-theme-choice="business">
+          <span class="theme-swatch swatch-business"></span>
+          <span class="theme-name">Business</span>
+          <span class="theme-desc">Klar &amp; Professionell</span>
+        </button>
+      </div>
+    </div>
   </div>
 </div>
 
