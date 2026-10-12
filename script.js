@@ -7,10 +7,14 @@
 
   const STORAGE_KEY = 'jarvis-tasks-v1';
   const THEME_KEY = 'jarvis-tasks-theme';
+  const TAGS_KEY = 'jarvis-tasks-tags';
   const DEFAULT_THEME = 'jarvis';
+  const PRESET_TAG_COLORS = ['#4ff2ff', '#22c55e', '#3b82f6', '#f59e0b', '#ec4899', '#a855f7', '#ef4444', '#14b8a6'];
 
-  /** @type {{id:string, title:string, date:string, priority:'low'|'normal'|'high', notes:string, done:boolean}[]} */
+  /** @type {{id:string, title:string, date:string, priority:'low'|'normal'|'high', notes:string, done:boolean, tagId:string|null}[]} */
   let tasks = loadTasks();
+  /** @type {{id:string, name:string, color:string}[]} */
+  let tags = loadTags();
 
   function loadTasks() {
     try {
@@ -23,6 +27,19 @@
 
   function saveTasks() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+  }
+
+  function loadTags() {
+    try {
+      const raw = localStorage.getItem(TAGS_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveTags() {
+    localStorage.setItem(TAGS_KEY, JSON.stringify(tags));
   }
 
   function toDateStr(d) {
@@ -57,6 +74,15 @@
     return toDateStr(target);
   }
 
+  function weekBounds() {
+    const now = new Date();
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - weekdayMon0(now));
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    return { monday: toDateStr(monday), sunday: toDateStr(sunday) };
+  }
+
   function isDoneOn(task, dateStr) {
     return task.recurring ? (task.completedDates || []).includes(dateStr) : !!task.done;
   }
@@ -78,11 +104,15 @@
   const recurringList = document.getElementById('recurring-list');
   const recurringEmpty = document.getElementById('recurring-empty');
 
-  const gaugeFill = document.getElementById('gauge-fill');
-  const gaugePercent = document.getElementById('gauge-percent');
-  const statOpen = document.getElementById('stat-open');
-  const statDone = document.getElementById('stat-done');
-  const statTotal = document.getElementById('stat-total');
+  const openDonut = document.getElementById('open-donut');
+  const openDonutCount = document.getElementById('open-donut-count');
+  const openLegend = document.getElementById('open-legend');
+  const doneDonut = document.getElementById('done-donut');
+  const doneDonutCount = document.getElementById('done-donut-count');
+  const doneLegend = document.getElementById('done-legend');
+  const weekDonut = document.getElementById('week-donut');
+  const weekDonutCount = document.getElementById('week-donut-count');
+  const weekLegend = document.getElementById('week-legend');
 
   const modal = document.getElementById('task-modal');
   const modalTitle = document.getElementById('modal-title');
@@ -98,6 +128,13 @@
   const recurrenceHint = document.getElementById('recurrence-hint');
   const fieldRecurrenceToggle = document.getElementById('field-recurrence-toggle');
   const recurrencePanel = document.getElementById('recurrence-panel');
+
+  const tagPicker = document.getElementById('tag-picker');
+  const tagCreate = document.getElementById('tag-create');
+  const newTagNameInput = document.getElementById('new-tag-name');
+  const tagSwatches = document.getElementById('tag-swatches');
+  const tagCreateConfirm = document.getElementById('tag-create-confirm');
+  const tagCreateCancel = document.getElementById('tag-create-cancel');
 
   const btnSettings = document.getElementById('btn-settings');
   const settingsModal = document.getElementById('settings-modal');
@@ -203,11 +240,188 @@
   });
   fieldRecurring.addEventListener('change', updateRecurrenceHint);
 
+  // ---------- tag picker ----------
+  let selectedTagId = null;
+  let pendingSwatchColor = PRESET_TAG_COLORS[0];
+
+  function renderTagPicker() {
+    tagPicker.innerHTML = '';
+
+    const noneChip = document.createElement('button');
+    noneChip.type = 'button';
+    noneChip.className = 'tag-chip' + (selectedTagId === null ? ' active' : '');
+    noneChip.textContent = 'Kein Tag';
+    noneChip.addEventListener('click', () => {
+      selectedTagId = null;
+      renderTagPicker();
+    });
+    tagPicker.appendChild(noneChip);
+
+    tags.forEach(tag => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'tag-chip' + (selectedTagId === tag.id ? ' active' : '');
+      chip.style.color = tag.color;
+      const dot = document.createElement('span');
+      dot.className = 'tag-dot';
+      dot.style.background = tag.color;
+      chip.appendChild(dot);
+      chip.appendChild(document.createTextNode(tag.name));
+      chip.addEventListener('click', () => {
+        selectedTagId = tag.id;
+        renderTagPicker();
+      });
+      tagPicker.appendChild(chip);
+    });
+
+    const addChip = document.createElement('button');
+    addChip.type = 'button';
+    addChip.className = 'tag-chip add-new';
+    addChip.textContent = '+ Neu';
+    addChip.addEventListener('click', () => {
+      tagCreate.hidden = false;
+      newTagNameInput.value = '';
+      pendingSwatchColor = PRESET_TAG_COLORS[0];
+      renderTagSwatches();
+      newTagNameInput.focus();
+    });
+    tagPicker.appendChild(addChip);
+  }
+
+  function renderTagSwatches() {
+    tagSwatches.innerHTML = '';
+    PRESET_TAG_COLORS.forEach(color => {
+      const sw = document.createElement('button');
+      sw.type = 'button';
+      sw.className = 'tag-swatch' + (color === pendingSwatchColor ? ' selected' : '');
+      sw.style.background = color;
+      sw.style.color = color;
+      sw.addEventListener('click', () => {
+        pendingSwatchColor = color;
+        renderTagSwatches();
+      });
+      tagSwatches.appendChild(sw);
+    });
+  }
+
+  tagCreateConfirm.addEventListener('click', () => {
+    const name = newTagNameInput.value.trim();
+    if (!name) {
+      alert('Bitte einen Namen für den Tag eingeben.');
+      return;
+    }
+    const tag = { id: newId(), name, color: pendingSwatchColor };
+    tags.push(tag);
+    saveTags();
+    selectedTagId = tag.id;
+    tagCreate.hidden = true;
+    renderTagPicker();
+  });
+  tagCreateCancel.addEventListener('click', () => { tagCreate.hidden = true; });
+
   // ---------- rendering ----------
   function renderAll() {
     renderToday();
     renderAllTasks();
     renderRecurring();
+    renderTagCharts();
+  }
+
+  function tasksForToday() {
+    const today = todayStr();
+    const todayWd = weekdayMon0(new Date());
+    const single = tasks.filter(t => !t.recurring && t.date === today);
+    const recurring = tasks.filter(t => t.recurring && t.weekdays.includes(todayWd));
+    return [...single, ...recurring];
+  }
+
+  function openOccurrencesForThisWeek() {
+    const { monday, sunday } = weekBounds();
+    const result = [];
+    tasks.forEach(t => {
+      if (t.recurring) {
+        t.weekdays.forEach(wd => {
+          const date = dateForWeekdayThisWeek(wd);
+          if (!isDoneOn(t, date)) result.push(t);
+        });
+      } else if (t.date >= monday && t.date <= sunday && !isDoneOn(t, t.date)) {
+        result.push(t);
+      }
+    });
+    return result;
+  }
+
+  function renderTagCharts() {
+    const today = todayStr();
+    const todays = tasksForToday();
+    const open = todays.filter(t => !isDoneOn(t, today));
+    const done = todays.filter(t => isDoneOn(t, today));
+    renderDonut(openDonut, openDonutCount, openLegend, open);
+    renderDonut(doneDonut, doneDonutCount, doneLegend, done);
+    renderDonut(weekDonut, weekDonutCount, weekLegend, openOccurrencesForThisWeek());
+  }
+
+  function renderDonut(donutEl, countEl, legendEl, taskList) {
+    countEl.textContent = taskList.length;
+    legendEl.innerHTML = '';
+
+    if (taskList.length === 0) {
+      donutEl.style.background = 'var(--accent-wash-3)';
+      const empty = document.createElement('div');
+      empty.className = 'legend-empty';
+      empty.textContent = 'Keine Aufgaben';
+      legendEl.appendChild(empty);
+      return;
+    }
+
+    const counts = new Map();
+    taskList.forEach(t => {
+      const key = t.tagId || '__none__';
+      counts.set(key, (counts.get(key) || 0) + 1);
+    });
+
+    const total = taskList.length;
+    let cursor = 0;
+    const segments = [];
+    counts.forEach((count, key) => {
+      const tag = key === '__none__' ? null : tags.find(t => t.id === key);
+      const color = tag ? tag.color : 'var(--text-dim)';
+      const pct = (count / total) * 100;
+      segments.push(`${color} ${cursor}% ${cursor + pct}%`);
+      cursor += pct;
+
+      const row = document.createElement('div');
+      row.className = 'legend-row';
+      const dot = document.createElement('span');
+      dot.className = 'legend-dot';
+      dot.style.background = color;
+      const name = document.createElement('span');
+      name.className = 'legend-name';
+      name.textContent = tag ? tag.name : 'Ohne Tag';
+      const countSpan = document.createElement('span');
+      countSpan.className = 'legend-count';
+      countSpan.textContent = count;
+      row.appendChild(dot);
+      row.appendChild(name);
+      row.appendChild(countSpan);
+      legendEl.appendChild(row);
+    });
+
+    donutEl.style.background = `conic-gradient(${segments.join(', ')})`;
+  }
+
+  function appendTagBadge(meta, task) {
+    if (!task.tagId) return;
+    const tag = tags.find(t => t.id === task.tagId);
+    if (!tag) return;
+    const badge = document.createElement('span');
+    badge.className = 'meta-tag';
+    const dot = document.createElement('span');
+    dot.className = 'tag-dot';
+    dot.style.background = tag.color;
+    badge.appendChild(dot);
+    badge.appendChild(document.createTextNode(tag.name));
+    meta.appendChild(badge);
   }
 
   function renderRecurring() {
@@ -231,7 +445,10 @@
 
     const meta = document.createElement('div');
     meta.className = 'task-meta';
-    meta.textContent = `⟳ WIEDERHOLUNG  //  PRIO: ${priorityLabel[task.priority]}`;
+    appendTagBadge(meta, task);
+    const metaText = document.createElement('span');
+    metaText.textContent = `⟳ WIEDERHOLUNG  //  PRIO: ${priorityLabel[task.priority]}`;
+    meta.appendChild(metaText);
 
     body.appendChild(title);
     body.appendChild(meta);
@@ -270,28 +487,12 @@
 
   function renderToday() {
     const today = todayStr();
-    const todayWd = weekdayMon0(new Date());
-    const singleTodays = tasks.filter(t => !t.recurring && t.date === today);
-    const recurringTodays = tasks.filter(t => t.recurring && t.weekdays.includes(todayWd));
-    const todays = [...singleTodays, ...recurringTodays]
+    const todays = tasksForToday()
       .sort((a, b) => Number(isDoneOn(a, today)) - Number(isDoneOn(b, today)) || priorityRank(b) - priorityRank(a));
 
     todayList.innerHTML = '';
     todayEmpty.hidden = todays.length > 0;
     todays.forEach(t => todayList.appendChild(renderTaskItem(t, { contextDate: today })));
-
-    const done = todays.filter(t => isDoneOn(t, today)).length;
-    const total = todays.length;
-    const open = total - done;
-    const pct = total === 0 ? 0 : Math.round((done / total) * 100);
-
-    statOpen.textContent = open;
-    statDone.textContent = done;
-    statTotal.textContent = total;
-    gaugePercent.textContent = pct + '%';
-    const circumference = 2 * Math.PI * 50;
-    gaugeFill.style.strokeDasharray = circumference;
-    gaugeFill.style.strokeDashoffset = circumference - (pct / 100) * circumference;
   }
 
   function renderAllTasks() {
@@ -343,7 +544,10 @@
       metaParts.push(formatDate(task.date));
     }
     metaParts.push(`PRIO: ${priorityLabel[task.priority]}`);
-    meta.textContent = metaParts.join('  //  ');
+    appendTagBadge(meta, task);
+    const metaText = document.createElement('span');
+    metaText.textContent = metaParts.join('  //  ');
+    meta.appendChild(metaText);
 
     body.appendChild(title);
     body.appendChild(meta);
@@ -410,6 +614,9 @@
     fieldRecurring.checked = false;
     fieldRecurrenceToggle.checked = false;
     recurrencePanel.hidden = true;
+    tagCreate.hidden = true;
+    selectedTagId = task ? (task.tagId || null) : null;
+    renderTagPicker();
 
     if (task) {
       modalTitle.textContent = 'AUFGABE BEARBEITEN';
@@ -482,6 +689,8 @@
 
     const existingId = fieldId.value;
 
+    const tagId = selectedTagId;
+
     if (existingId) {
       const existing = tasks.find(t => t.id === existingId);
       if (!existing) { closeModal(); return; }
@@ -489,6 +698,7 @@
         existing.title = title;
         existing.priority = priority;
         existing.notes = notes;
+        existing.tagId = tagId;
         existing.recurring = true;
         existing.weekdays = selectedWeekdays;
         existing.completedDates = existing.completedDates || [];
@@ -498,6 +708,7 @@
         existing.title = title;
         existing.priority = priority;
         existing.notes = notes;
+        existing.tagId = tagId;
         existing.date = fieldDate.value || existing.date || todayStr();
         existing.recurring = false;
         delete existing.weekdays;
@@ -505,19 +716,19 @@
       }
     } else if (wantsRecurring) {
       tasks.push({
-        id: newId(), title, priority, notes,
+        id: newId(), title, priority, notes, tagId,
         recurring: true, weekdays: selectedWeekdays, completedDates: []
       });
     } else if (selectedWeekdays.length > 0) {
       selectedWeekdays.forEach(wd => {
         tasks.push({
-          id: newId(), title, priority, notes,
+          id: newId(), title, priority, notes, tagId,
           date: dateForWeekdayThisWeek(wd), recurring: false, done: false
         });
       });
     } else {
       tasks.push({
-        id: newId(), title, priority, notes,
+        id: newId(), title, priority, notes, tagId,
         date: fieldDate.value || todayStr(), recurring: false, done: false
       });
     }

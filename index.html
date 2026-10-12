@@ -76,24 +76,44 @@
           <div id="today-empty" class="empty-state" hidden>Keine Aufgaben für heute erfasst. Status: frei.</div>
         </div>
 
-        <div class="panel panel-side">
-          <div class="panel-header">
-            <h2>STATUS</h2>
-          </div>
-          <div class="reactor-gauge">
-            <svg viewBox="0 0 120 120" class="gauge-svg">
-              <circle cx="60" cy="60" r="50" class="gauge-track"/>
-              <circle cx="60" cy="60" r="50" class="gauge-fill" id="gauge-fill"/>
-            </svg>
-            <div class="gauge-label">
-              <span id="gauge-percent">0%</span>
-              <small>ERLEDIGT</small>
+        <div class="panel-side-stack">
+          <div class="panel panel-side">
+            <div class="panel-header">
+              <h2>NOCH OFFEN</h2>
             </div>
+            <div class="donut-chart" id="open-donut">
+              <div class="donut-hole">
+                <span class="donut-count" id="open-donut-count">0</span>
+                <small>OFFEN</small>
+              </div>
+            </div>
+            <div class="legend" id="open-legend"></div>
           </div>
-          <div class="stat-rows">
-            <div class="stat-row"><span>Offen</span><span id="stat-open">0</span></div>
-            <div class="stat-row"><span>Erledigt</span><span id="stat-done">0</span></div>
-            <div class="stat-row"><span>Gesamt heute</span><span id="stat-total">0</span></div>
+
+          <div class="panel panel-side">
+            <div class="panel-header">
+              <h2>ABGESCHLOSSEN</h2>
+            </div>
+            <div class="donut-chart" id="done-donut">
+              <div class="donut-hole">
+                <span class="donut-count" id="done-donut-count">0</span>
+                <small>FERTIG</small>
+              </div>
+            </div>
+            <div class="legend" id="done-legend"></div>
+          </div>
+
+          <div class="panel panel-side">
+            <div class="panel-header">
+              <h2>WOCHENAUFGABEN</h2>
+            </div>
+            <div class="donut-chart" id="week-donut">
+              <div class="donut-hole">
+                <span class="donut-count" id="week-donut-count">0</span>
+                <small>DIESE WOCHE</small>
+              </div>
+            </div>
+            <div class="legend" id="week-legend"></div>
           </div>
         </div>
 
@@ -150,6 +170,19 @@
           <option value="high">Hoch</option>
         </select>
       </label>
+      <div class="field">
+        <span>Tag (optional)</span>
+        <div class="tag-picker" id="tag-picker"></div>
+        <div class="tag-create" id="tag-create" hidden>
+          <input type="text" id="new-tag-name" placeholder="Name, z.B. Training" maxlength="24">
+          <div class="tag-swatches" id="tag-swatches"></div>
+          <div class="tag-create-actions">
+            <button type="button" id="tag-create-cancel" class="btn-icon">&times;</button>
+            <button type="button" id="tag-create-confirm" class="btn-hud primary">Tag hinzufügen</button>
+          </div>
+        </div>
+      </div>
+
       <label class="field">
         <span>Notizen (optional)</span>
         <textarea id="field-notes" rows="3" placeholder="Zusätzliche Details, optional..."></textarea>
