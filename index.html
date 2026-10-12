@@ -59,6 +59,7 @@
   <nav class="tabs">
     <button class="tab-btn active" data-view="dashboard">DASHBOARD</button>
     <button class="tab-btn" data-view="all">ALLE AUFGABEN</button>
+    <button class="tab-btn" data-view="recurring">WIEDERHOLUNGEN</button>
   </nav>
 
   <main>
@@ -110,6 +111,18 @@
         <div id="all-empty" class="empty-state" hidden>Keine Aufgaben im System.</div>
       </div>
     </section>
+
+    <!-- RECURRING TASKS VIEW -->
+    <section id="view-recurring" class="view">
+      <div class="panel panel-main full">
+        <div class="panel-header">
+          <h2>WIEDERHOLUNGEN</h2>
+          <button id="btn-add-recurring" class="btn-hud">+ NEUE AUFGABE</button>
+        </div>
+        <ul id="recurring-list" class="task-list"></ul>
+        <div id="recurring-empty" class="empty-state" hidden>Keine wiederkehrenden Aufgaben eingerichtet.</div>
+      </div>
+    </section>
   </main>
 </div>
 
@@ -126,8 +139,8 @@
         <input type="text" id="field-title" required maxlength="120" placeholder="z.B. Mark-II Anzug warten">
       </label>
       <label class="field">
-        <span>Datum *</span>
-        <input type="date" id="field-date" required>
+        <span>Datum</span>
+        <input type="date" id="field-date">
       </label>
       <label class="field">
         <span>Priorität</span>
@@ -141,6 +154,40 @@
         <span>Notizen (optional)</span>
         <textarea id="field-notes" rows="3" placeholder="Zusätzliche Details, optional..."></textarea>
       </label>
+
+      <div class="field recurrence-field">
+        <label class="switch-row">
+          <span class="switch-label">Wiederholung</span>
+          <span class="switch">
+            <input type="checkbox" id="field-recurrence-toggle">
+            <span class="switch-track"><span class="switch-thumb"></span></span>
+          </span>
+        </label>
+
+        <div class="recurrence-panel" id="recurrence-panel" hidden>
+          <span class="field-subspan">Wochentage</span>
+          <div class="weekday-picker" id="weekday-picker">
+            <button type="button" class="weekday-btn" data-weekday="0">MO</button>
+            <button type="button" class="weekday-btn" data-weekday="1">DI</button>
+            <button type="button" class="weekday-btn" data-weekday="2">MI</button>
+            <button type="button" class="weekday-btn" data-weekday="3">DO</button>
+            <button type="button" class="weekday-btn" data-weekday="4">FR</button>
+            <button type="button" class="weekday-btn" data-weekday="5">SA</button>
+            <button type="button" class="weekday-btn" data-weekday="6">SO</button>
+          </div>
+
+          <label class="switch-row">
+            <span class="switch-label">Für mehrere Wochen</span>
+            <span class="switch">
+              <input type="checkbox" id="field-recurring">
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+            </span>
+          </label>
+
+          <p class="settings-hint" id="recurrence-hint">Kein Wochentag gewählt — es gilt das Datum oben.</p>
+        </div>
+      </div>
+
       <input type="hidden" id="field-id">
       <div class="modal-actions">
         <button type="button" id="btn-delete" class="btn-hud danger" hidden>LÖSCHEN</button>

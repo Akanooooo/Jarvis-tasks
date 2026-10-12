@@ -212,6 +212,7 @@ h1, h2, h3, h4 { font-family: var(--font-display); margin: 0; }
 /* ---------- tabs ---------- */
 .tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 22px;
 }
@@ -263,12 +264,15 @@ h1, h2, h3, h4 { font-family: var(--font-display); margin: 0; }
 
 .panel-header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
+  gap: 10px;
   margin-bottom: 16px;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--border);
 }
+.panel-header h2 { min-width: 0; word-break: break-word; }
 .panel-header h2 {
   font-size: 0.95rem;
   letter-spacing: 3px;
@@ -480,6 +484,107 @@ h1, h2, h3, h4 { font-family: var(--font-display); margin: 0; }
   box-shadow: 0 0 10px var(--accent-glow-strong);
 }
 .field textarea { resize: vertical; }
+
+.field-subspan {
+  display: block;
+  font-size: 0.68rem;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.weekday-picker {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 0 0 10px;
+}
+.weekday-btn {
+  width: 38px;
+  height: 36px;
+  background: var(--accent-wash-1);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  clip-path: var(--clip-btn);
+  border-radius: var(--radius-btn);
+  transition: all 0.15s ease;
+}
+.weekday-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+.weekday-btn.active {
+  background: var(--cyan);
+  color: var(--bg-0);
+  border-color: var(--cyan);
+  box-shadow: 0 0 10px var(--cyan-glow);
+}
+
+/* ---------- toggle switch ---------- */
+.switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  margin-bottom: 12px;
+}
+.switch-label {
+  font-size: 0.78rem;
+  color: var(--text);
+  letter-spacing: 0.3px;
+}
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+.switch input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+.switch-track {
+  display: block;
+  width: 44px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.switch-thumb {
+  display: block;
+  width: 18px;
+  height: 18px;
+  margin: 2px;
+  background: var(--text-dim);
+  border-radius: 50%;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+.switch input:checked ~ .switch-track {
+  background: #22c55e;
+  border-color: #22c55e;
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+}
+.switch input:checked ~ .switch-track .switch-thumb {
+  transform: translateX(20px);
+  background: #f0fff4;
+}
+
+.recurrence-field { border-top: 1px solid var(--border); padding-top: 14px; margin-top: 4px; }
+.recurrence-panel {
+  margin-top: 2px;
+  padding-top: 2px;
+}
 
 .modal-actions {
   display: flex;
