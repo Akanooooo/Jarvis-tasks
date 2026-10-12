@@ -1,0 +1,16 @@
+{
+  "name": "J.A.R.V.I.S. Tasks",
+  "short_name": "JARVIS",
+  "description": "Tägliche Aufgabenverwaltung im J.A.R.V.I.S. HUD-Look",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#040810",
+  "theme_color": "#040810",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

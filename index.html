@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>J.A.R.V.I.S. // TASK INTERFACE</title>
+
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<meta name="theme-color" content="#040810">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="JARVIS">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="scanlines"></div>
+<div class="vignette"></div>
+
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="arc-reactor">
+        <div class="arc-core"></div>
+        <div class="arc-ring ring1"></div>
+        <div class="arc-ring ring2"></div>
+      </div>
+      <div class="brand-text">
+        <h1>J.A.R.V.I.S.</h1>
+        <span>TASK MANAGEMENT INTERFACE</span>
+      </div>
+    </div>
+    <div class="status-block">
+      <div id="clock" class="clock">00:00:00</div>
+      <div id="dateline" class="dateline">--</div>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-view="dashboard">DASHBOARD</button>
+    <button class="tab-btn" data-view="all">ALLE AUFGABEN</button>
+  </nav>
+
+  <main>
+    <!-- DASHBOARD VIEW -->
+    <section id="view-dashboard" class="view active">
+      <div class="panel-grid">
+
+        <div class="panel panel-main">
+          <div class="panel-header">
+            <h2>HEUTIGE AUFGABEN</h2>
+            <button id="btn-add-today" class="btn-hud">+ NEUE AUFGABE</button>
+          </div>
+          <ul id="today-list" class="task-list"></ul>
+          <div id="today-empty" class="empty-state" hidden>Keine Aufgaben für heute erfasst. Status: frei.</div>
+        </div>
+
+        <div class="panel panel-side">
+          <div class="panel-header">
+            <h2>STATUS</h2>
+          </div>
+          <div class="reactor-gauge">
+            <svg viewBox="0 0 120 120" class="gauge-svg">
+              <circle cx="60" cy="60" r="50" class="gauge-track"/>
+              <circle cx="60" cy="60" r="50" class="gauge-fill" id="gauge-fill"/>
+            </svg>
+            <div class="gauge-label">
+              <span id="gauge-percent">0%</span>
+              <small>ERLEDIGT</small>
+            </div>
+          </div>
+          <div class="stat-rows">
+            <div class="stat-row"><span>Offen</span><span id="stat-open">0</span></div>
+            <div class="stat-row"><span>Erledigt</span><span id="stat-done">0</span></div>
+            <div class="stat-row"><span>Gesamt heute</span><span id="stat-total">0</span></div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ALL TASKS VIEW -->
+    <section id="view-all" class="view">
+      <div class="panel panel-main full">
+        <div class="panel-header">
+          <h2>ALLE AUFGABEN</h2>
+          <button id="btn-add-all" class="btn-hud">+ NEUE AUFGABE</button>
+        </div>
+        <ul id="all-list" class="task-list"></ul>
+        <div id="all-empty" class="empty-state" hidden>Keine Aufgaben im System.</div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- TASK MODAL -->
+<div id="task-modal" class="modal-overlay" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">NEUE AUFGABE</h3>
+      <button id="modal-close" class="btn-icon">&times;</button>
+    </div>
+    <form id="task-form">
+      <label class="field">
+        <span>Titel *</span>
+        <input type="text" id="field-title" required maxlength="120" placeholder="z.B. Mark-II Anzug warten">
+      </label>
+      <label class="field">
+        <span>Datum *</span>
+        <input type="date" id="field-date" required>
+      </label>
+      <label class="field">
+        <span>Priorität</span>
+        <select id="field-priority">
+          <option value="low">Niedrig</option>
+          <option value="normal" selected>Normal</option>
+          <option value="high">Hoch</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>Notizen (optional)</span>
+        <textarea id="field-notes" rows="3" placeholder="Zusätzliche Details, optional..."></textarea>
+      </label>
+      <input type="hidden" id="field-id">
+      <div class="modal-actions">
+        <button type="button" id="btn-delete" class="btn-hud danger" hidden>LÖSCHEN</button>
+        <button type="submit" class="btn-hud primary">SPEICHERN</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
