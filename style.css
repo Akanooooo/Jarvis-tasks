@@ -693,6 +693,12 @@ h1, h2, h3, h4 { font-family: var(--font-display); margin: 0; }
   color: var(--text-dim);
   margin: 0 0 14px;
 }
+.settings-section + .settings-section {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+.data-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 
 .theme-grid {
   display: grid;

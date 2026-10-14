@@ -1,4 +1,4 @@
-const CACHE = 'jarvis-tasks-v13';
+const CACHE = 'jarvis-tasks-v15';
 const ASSETS = [
   './',
   './index.html',
@@ -32,5 +32,31 @@ self.addEventListener('fetch', (e) => {
         return res;
       })
       .catch(() => caches.match(e.request))
+  );
+});
+
+self.addEventListener('push', (e) => {
+  let data = {};
+  try { data = e.data.json(); } catch (err) {}
+  const title = data.title || 'J.A.R.V.I.S.';
+  const body = data.body || 'Erinnerung';
+  e.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      icon: './icons/icon-192.png',
+      badge: './icons/icon-192.png'
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  e.waitUntil(
+    clients.matchAll({ type: 'window' }).then((clientList) => {
+      for (const client of clientList) {
+        if ('focus' in client) return client.focus();
+      }
+      if (clients.openWindow) return clients.openWindow('./');
+    })
   );
 });

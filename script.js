@@ -8,8 +8,12 @@
   const STORAGE_KEY = 'jarvis-tasks-v1';
   const THEME_KEY = 'jarvis-tasks-theme';
   const TAGS_KEY = 'jarvis-tasks-tags';
+  const DEVICE_ID_KEY = 'jarvis-tasks-device-id';
+  const NOTIFICATIONS_KEY = 'jarvis-tasks-notifications-enabled';
   const DEFAULT_THEME = 'jarvis';
   const PRESET_TAG_COLORS = ['#4ff2ff', '#22c55e', '#3b82f6', '#f59e0b', '#ec4899', '#a855f7', '#ef4444', '#14b8a6'];
+  const PUSH_WORKER_URL = 'https://jarvis-tasks-push.felux-klein-19e.workers.dev';
+  const VAPID_PUBLIC_KEY = 'BNaouypLdvDoCZUfthf7obZIEK8jBoUgMwab41geSFkGKiYZJwxVnRcucInG2U8kQvAHt_lU15AswJ4R__TgBuw';
 
   /** @type {{id:string, title:string, date:string, priority:'low'|'normal'|'high', notes:string, done:boolean, tagId:string|null}[]} */
   let tasks = loadTasks();
@@ -27,6 +31,7 @@
 
   function saveTasks() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    syncReminders();
   }
 
   function loadTags() {
@@ -132,6 +137,7 @@
   const fieldId = document.getElementById('field-id');
   const fieldTitle = document.getElementById('field-title');
   const fieldDate = document.getElementById('field-date');
+  const fieldTime = document.getElementById('field-time');
   const fieldPriority = document.getElementById('field-priority');
   const fieldNotes = document.getElementById('field-notes');
   const btnDelete = document.getElementById('btn-delete');
@@ -197,6 +203,170 @@
   settingsClose.addEventListener('click', closeSettings);
   settingsModal.addEventListener('click', (e) => { if (e.target === settingsModal) closeSettings(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !settingsModal.hidden) closeSettings(); });
+
+  // ---------- backup / restore ----------
+  const btnExport = document.getElementById('btn-export');
+  const btnImport = document.getElementById('btn-import');
+  const importFileInput = document.getElementById('import-file');
+  const btnEnableNotifications = document.getElementById('btn-enable-notifications');
+  const notifStatus = document.getElementById('notif-status');
+
+  btnExport.addEventListener('click', () => {
+    const backup = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      tasks,
+      tags
+    };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `jarvis-tasks-backup-${todayStr()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  });
+
+  btnImport.addEventListener('click', () => importFileInput.click());
+
+  importFileInput.addEventListener('change', () => {
+    const file = importFileInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        if (!Array.isArray(data.tasks) || !Array.isArray(data.tags)) {
+          alert('Diese Datei sieht nicht wie ein gültiges Backup aus.');
+          return;
+        }
+        const whenLabel = data.exportedAt ? new Date(data.exportedAt).toLocaleString('de-DE') : 'unbekanntem Datum';
+        if (!confirm(`Backup vom ${whenLabel} importieren? Das ersetzt alle aktuellen Aufgaben und Tags.`)) {
+          return;
+        }
+        tasks = data.tasks;
+        tags = data.tags;
+        saveTasks();
+        saveTags();
+        renderAll();
+        renderTagPicker();
+        alert('Backup erfolgreich importiert.');
+      } catch (e) {
+        alert('Datei konnte nicht gelesen werden — ist es eine gültige Backup-Datei?');
+      } finally {
+        importFileInput.value = '';
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  // ---------- push notifications ----------
+  function getDeviceId() {
+    let id = localStorage.getItem(DEVICE_ID_KEY);
+    if (!id) {
+      id = newId();
+      localStorage.setItem(DEVICE_ID_KEY, id);
+    }
+    return id;
+  }
+
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; i++) outputArray[i] = rawData.charCodeAt(i);
+    return outputArray;
+  }
+
+  function buildReminders() {
+    const reminders = [];
+    const today = todayStr();
+    const horizonDays = 14;
+
+    tasks.forEach(t => {
+      if (!t.time) return;
+      if (t.recurring) {
+        for (let i = 0; i < horizonDays; i++) {
+          const d = new Date();
+          d.setDate(d.getDate() + i);
+          const dateStr = toDateStr(d);
+          const wd = weekdayMon0(d);
+          if (t.weekdays.includes(wd) && !isDoneOn(t, dateStr)) {
+            reminders.push({ id: `${t.id}:${dateStr}`, title: t.title, date: dateStr, time: t.time });
+          }
+        }
+      } else if (t.date >= today && !t.done) {
+        reminders.push({ id: t.id, title: t.title, date: t.date, time: t.time });
+      }
+    });
+    return reminders;
+  }
+
+  function syncReminders() {
+    if (localStorage.getItem(NOTIFICATIONS_KEY) !== 'true') return;
+    fetch(`${PUSH_WORKER_URL}/sync-reminders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deviceId: getDeviceId(), reminders: buildReminders() })
+    }).catch(() => {});
+  }
+
+  function updateNotifStatus() {
+    const enabled = localStorage.getItem(NOTIFICATIONS_KEY) === 'true';
+    notifStatus.textContent = enabled
+      ? 'Aktiv — du bekommst Erinnerungen für Aufgaben mit Uhrzeit.'
+      : 'Erinnerung per Push-Nachricht, wenn eine Aufgabe mit Uhrzeit fällig ist.';
+    btnEnableNotifications.textContent = enabled ? 'DEAKTIVIEREN' : 'AKTIVIEREN';
+  }
+
+  async function enableNotifications() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      alert('Push-Benachrichtigungen werden auf diesem Gerät/Browser nicht unterstützt.');
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      alert('Ohne Erlaubnis kann ich dir keine Benachrichtigungen schicken.');
+      return;
+    }
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) {
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        });
+      }
+      await fetch(`${PUSH_WORKER_URL}/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceId: getDeviceId(), subscription: sub.toJSON() })
+      });
+      localStorage.setItem(NOTIFICATIONS_KEY, 'true');
+      syncReminders();
+      updateNotifStatus();
+      alert('Benachrichtigungen aktiviert.');
+    } catch (err) {
+      alert('Benachrichtigungen konnten nicht aktiviert werden.');
+    }
+  }
+
+  function disableNotifications() {
+    localStorage.setItem(NOTIFICATIONS_KEY, 'false');
+    updateNotifStatus();
+  }
+
+  btnEnableNotifications.addEventListener('click', () => {
+    if (localStorage.getItem(NOTIFICATIONS_KEY) === 'true') {
+      disableNotifications();
+    } else {
+      enableNotifications();
+    }
+  });
 
   // ---------- clock ----------
   function tickClock() {
@@ -663,6 +833,7 @@
     } else if (showDate) {
       metaParts.push(formatDate(task.date));
     }
+    if (task.time) metaParts.push(`⏰ ${task.time}`);
     metaParts.push(`PRIO: ${priorityLabel[task.priority]}`);
     appendTagBadge(meta, task);
     const metaText = document.createElement('span');
@@ -797,6 +968,7 @@
       fieldTitle.value = task.title;
       fieldPriority.value = task.priority;
       fieldNotes.value = task.notes || '';
+      fieldTime.value = task.time || '';
       if (task.recurring) {
         fieldDate.value = '';
         weekdayButtons.forEach(b => {
@@ -848,6 +1020,7 @@
 
     const priority = fieldPriority.value;
     const notes = fieldNotes.value.trim();
+    const time = fieldTime.value || null;
     const selectedWeekdays = getSelectedWeekdays();
     const wantsRecurring = fieldRecurring.checked;
 
@@ -872,6 +1045,7 @@
         existing.priority = priority;
         existing.notes = notes;
         existing.tagId = tagId;
+        existing.time = time;
         existing.recurring = true;
         existing.weekdays = selectedWeekdays;
         existing.completedDates = existing.completedDates || [];
@@ -882,6 +1056,7 @@
         existing.priority = priority;
         existing.notes = notes;
         existing.tagId = tagId;
+        existing.time = time;
         existing.date = fieldDate.value || existing.date || todayStr();
         existing.recurring = false;
         delete existing.weekdays;
@@ -889,19 +1064,19 @@
       }
     } else if (wantsRecurring) {
       tasks.push({
-        id: newId(), title, priority, notes, tagId,
+        id: newId(), title, priority, notes, tagId, time,
         recurring: true, weekdays: selectedWeekdays, completedDates: []
       });
     } else if (selectedWeekdays.length > 0) {
       selectedWeekdays.forEach(wd => {
         tasks.push({
-          id: newId(), title, priority, notes, tagId,
+          id: newId(), title, priority, notes, tagId, time,
           date: dateForWeekdayThisWeek(wd), recurring: false, done: false
         });
       });
     } else {
       tasks.push({
-        id: newId(), title, priority, notes, tagId,
+        id: newId(), title, priority, notes, tagId, time,
         date: fieldDate.value || todayStr(), recurring: false, done: false
       });
     }
@@ -913,5 +1088,6 @@
 
   // ---------- init ----------
   loadTheme();
+  updateNotifStatus();
   renderAll();
 })();

@@ -186,6 +186,10 @@
         <input type="date" id="field-date">
       </label>
       <label class="field">
+        <span>Uhrzeit (optional, für Erinnerung)</span>
+        <input type="time" id="field-time">
+      </label>
+      <label class="field">
         <span>Priorität</span>
         <select id="field-priority">
           <option value="low">Niedrig</option>
@@ -287,6 +291,24 @@
           <span class="theme-name">Business</span>
           <span class="theme-desc">Klar &amp; Professionell</span>
         </button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h4>DATEN</h4>
+      <p class="settings-hint">Sicherung erstellen oder wiederherstellen</p>
+      <div class="data-actions">
+        <button type="button" id="btn-export" class="btn-hud">EXPORTIEREN</button>
+        <button type="button" id="btn-import" class="btn-hud">IMPORTIEREN</button>
+        <input type="file" id="import-file" accept="application/json" hidden>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h4>BENACHRICHTIGUNGEN</h4>
+      <p class="settings-hint" id="notif-status">Erinnerung per Push-Nachricht, wenn eine Aufgabe mit Uhrzeit fällig ist.</p>
+      <div class="data-actions">
+        <button type="button" id="btn-enable-notifications" class="btn-hud">AKTIVIEREN</button>
       </div>
     </div>
   </div>
