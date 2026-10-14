@@ -104,6 +104,18 @@
   const recurringList = document.getElementById('recurring-list');
   const recurringEmpty = document.getElementById('recurring-empty');
 
+  const calPrev = document.getElementById('cal-prev');
+  const calNext = document.getElementById('cal-next');
+  const calMonthLabel = document.getElementById('cal-month-label');
+  const calendarGrid = document.getElementById('calendar-grid');
+
+  const dayModal = document.getElementById('day-modal');
+  const dayModalTitle = document.getElementById('day-modal-title');
+  const dayModalClose = document.getElementById('day-modal-close');
+  const dayModalAdd = document.getElementById('day-modal-add');
+  const dayModalList = document.getElementById('day-modal-list');
+  const dayModalEmpty = document.getElementById('day-modal-empty');
+
   const openDonut = document.getElementById('open-donut');
   const openDonutCount = document.getElementById('open-donut-count');
   const openLegend = document.getElementById('open-legend');
@@ -135,6 +147,14 @@
   const tagSwatches = document.getElementById('tag-swatches');
   const tagCreateConfirm = document.getElementById('tag-create-confirm');
   const tagCreateCancel = document.getElementById('tag-create-cancel');
+  const tagReflectToggle = document.getElementById('tag-reflect-toggle');
+
+  const reflectionModal = document.getElementById('reflection-modal');
+  const reflectionModalSubtitle = document.getElementById('reflection-modal-subtitle');
+  const reflectionText = document.getElementById('reflection-text');
+  const reflectionSave = document.getElementById('reflection-save');
+  const reflectionSkip = document.getElementById('reflection-skip');
+  const reflectionModalClose = document.getElementById('reflection-modal-close');
 
   const btnSettings = document.getElementById('btn-settings');
   const settingsModal = document.getElementById('settings-modal');
@@ -281,6 +301,7 @@
     addChip.addEventListener('click', () => {
       tagCreate.hidden = false;
       newTagNameInput.value = '';
+      tagReflectToggle.checked = false;
       pendingSwatchColor = PRESET_TAG_COLORS[0];
       renderTagSwatches();
       newTagNameInput.focus();
@@ -310,7 +331,7 @@
       alert('Bitte einen Namen für den Tag eingeben.');
       return;
     }
-    const tag = { id: newId(), name, color: pendingSwatchColor };
+    const tag = { id: newId(), name, color: pendingSwatchColor, reflect: tagReflectToggle.checked };
     tags.push(tag);
     saveTags();
     selectedTagId = tag.id;
@@ -325,6 +346,8 @@
     renderAllTasks();
     renderRecurring();
     renderTagCharts();
+    renderCalendar();
+    if (!dayModal.hidden && currentDayModalDate) renderDayModalList(currentDayModalDate);
   }
 
   function tasksForToday() {
@@ -332,6 +355,13 @@
     const todayWd = weekdayMon0(new Date());
     const single = tasks.filter(t => !t.recurring && t.date === today);
     const recurring = tasks.filter(t => t.recurring && t.weekdays.includes(todayWd));
+    return [...single, ...recurring];
+  }
+
+  function tasksForDate(dateStr) {
+    const wd = weekdayMon0(new Date(dateStr + 'T00:00:00'));
+    const single = tasks.filter(t => !t.recurring && t.date === dateStr);
+    const recurring = tasks.filter(t => t.recurring && t.weekdays.includes(wd));
     return [...single, ...recurring];
   }
 
@@ -409,6 +439,96 @@
 
     donutEl.style.background = `conic-gradient(${segments.join(', ')})`;
   }
+
+  // ---------- calendar ----------
+  let calendarViewDate = new Date();
+  let currentDayModalDate = null;
+
+  function renderCalendar() {
+    const year = calendarViewDate.getFullYear();
+    const month = calendarViewDate.getMonth();
+    calMonthLabel.textContent = calendarViewDate
+      .toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })
+      .toUpperCase();
+
+    const firstOfMonth = new Date(year, month, 1);
+    const startOffset = weekdayMon0(firstOfMonth);
+    const gridStart = new Date(year, month, 1 - startOffset);
+
+    const today = todayStr();
+    calendarGrid.innerHTML = '';
+
+    for (let i = 0; i < 42; i++) {
+      const cellDate = new Date(gridStart);
+      cellDate.setDate(gridStart.getDate() + i);
+      const dateStr = toDateStr(cellDate);
+      const isOtherMonth = cellDate.getMonth() !== month;
+
+      const cell = document.createElement('button');
+      cell.type = 'button';
+      cell.className = 'calendar-day'
+        + (isOtherMonth ? ' other-month' : '')
+        + (dateStr === today ? ' today' : '');
+
+      const num = document.createElement('span');
+      num.className = 'calendar-day-number';
+      num.textContent = cellDate.getDate();
+      cell.appendChild(num);
+
+      const dayTasks = tasksForDate(dateStr);
+      if (dayTasks.length > 0) {
+        const doneCount = dayTasks.filter(t => isDoneOn(t, dateStr)).length;
+        const badge = document.createElement('span');
+        badge.className = 'calendar-day-badge' + (doneCount === dayTasks.length ? ' all-done' : '');
+        badge.textContent = dayTasks.length;
+        cell.appendChild(badge);
+      }
+
+      cell.addEventListener('click', () => openDayModal(dateStr));
+      calendarGrid.appendChild(cell);
+    }
+  }
+
+  calPrev.addEventListener('click', () => {
+    calendarViewDate.setMonth(calendarViewDate.getMonth() - 1);
+    renderCalendar();
+  });
+  calNext.addEventListener('click', () => {
+    calendarViewDate.setMonth(calendarViewDate.getMonth() + 1);
+    renderCalendar();
+  });
+
+  function renderDayModalList(dateStr) {
+    const list = tasksForDate(dateStr)
+      .sort((a, b) => Number(isDoneOn(a, dateStr)) - Number(isDoneOn(b, dateStr)) || priorityRank(b) - priorityRank(a));
+    dayModalList.innerHTML = '';
+    dayModalEmpty.hidden = list.length > 0;
+    list.forEach(t => dayModalList.appendChild(renderTaskItem(t, { contextDate: dateStr })));
+  }
+
+  function openDayModal(dateStr) {
+    currentDayModalDate = dateStr;
+    const d = new Date(dateStr + 'T00:00:00');
+    dayModalTitle.textContent = d
+      .toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+      .toUpperCase();
+    dayModalAdd.onclick = () => {
+      closeDayModal();
+      openModal();
+      fieldDate.value = dateStr;
+    };
+    renderDayModalList(dateStr);
+    dayModal.hidden = false;
+  }
+
+  function closeDayModal() {
+    dayModal.hidden = true;
+    currentDayModalDate = null;
+  }
+
+  dayModalClose.addEventListener('click', closeDayModal);
+  dayModal.addEventListener('click', (e) => { if (e.target === dayModal) closeDayModal(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !dayModal.hidden) closeDayModal(); });
 
   function appendTagBadge(meta, task) {
     if (!task.tagId) return;
@@ -559,6 +679,14 @@
       body.appendChild(notes);
     }
 
+    const reflectionNote = task.reflections && task.reflections[dateForDone];
+    if (reflectionNote) {
+      const reflection = document.createElement('div');
+      reflection.className = 'task-notes task-reflection';
+      reflection.textContent = `💭 ${reflectionNote}`;
+      body.appendChild(reflection);
+    }
+
     const actions = document.createElement('div');
     actions.className = 'task-actions';
 
@@ -589,17 +717,62 @@
   function toggleDone(id, dateStr) {
     const t = tasks.find(t => t.id === id);
     if (!t) return;
+    let justCompleted = false;
     if (t.recurring) {
       t.completedDates = t.completedDates || [];
       const idx = t.completedDates.indexOf(dateStr);
-      if (idx >= 0) t.completedDates.splice(idx, 1);
-      else t.completedDates.push(dateStr);
+      if (idx >= 0) {
+        t.completedDates.splice(idx, 1);
+      } else {
+        t.completedDates.push(dateStr);
+        justCompleted = true;
+      }
     } else {
       t.done = !t.done;
+      justCompleted = t.done;
     }
     saveTasks();
     renderAll();
+
+    if (justCompleted) {
+      const tag = t.tagId ? tags.find(x => x.id === t.tagId) : null;
+      if (tag && tag.reflect) openReflectionModal(t, dateStr);
+    }
   }
+
+  // ---------- reflection modal ----------
+  let reflectionContext = null;
+
+  function openReflectionModal(task, dateStr) {
+    reflectionContext = { taskId: task.id, dateStr };
+    reflectionModalSubtitle.textContent = `${task.title} — ${formatDate(dateStr)}`;
+    reflectionText.value = (task.reflections && task.reflections[dateStr]) || '';
+    reflectionModal.hidden = false;
+    reflectionText.focus();
+  }
+
+  function closeReflectionModal() {
+    reflectionModal.hidden = true;
+    reflectionContext = null;
+  }
+
+  reflectionSave.addEventListener('click', () => {
+    if (!reflectionContext) { closeReflectionModal(); return; }
+    const t = tasks.find(x => x.id === reflectionContext.taskId);
+    if (t) {
+      t.reflections = t.reflections || {};
+      const text = reflectionText.value.trim();
+      if (text) t.reflections[reflectionContext.dateStr] = text;
+      else delete t.reflections[reflectionContext.dateStr];
+      saveTasks();
+      renderAll();
+    }
+    closeReflectionModal();
+  });
+  reflectionSkip.addEventListener('click', closeReflectionModal);
+  reflectionModalClose.addEventListener('click', closeReflectionModal);
+  reflectionModal.addEventListener('click', (e) => { if (e.target === reflectionModal) closeReflectionModal(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !reflectionModal.hidden) closeReflectionModal(); });
 
   function deleteTask(id) {
     tasks = tasks.filter(t => t.id !== id);

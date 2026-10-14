@@ -60,6 +60,7 @@
     <button class="tab-btn active" data-view="dashboard">DASHBOARD</button>
     <button class="tab-btn" data-view="all">ALLE AUFGABEN</button>
     <button class="tab-btn" data-view="recurring">WIEDERHOLUNGEN</button>
+    <button class="tab-btn" data-view="calendar">KALENDER</button>
   </nav>
 
   <main>
@@ -143,6 +144,28 @@
         <div id="recurring-empty" class="empty-state" hidden>Keine wiederkehrenden Aufgaben eingerichtet.</div>
       </div>
     </section>
+
+    <!-- CALENDAR VIEW -->
+    <section id="view-calendar" class="view">
+      <div class="panel panel-main full">
+        <div class="panel-header">
+          <h2>KALENDER</h2>
+        </div>
+        <div class="calendar-nav">
+          <button type="button" id="cal-prev" class="btn-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <span id="cal-month-label" class="calendar-month-label">--</span>
+          <button type="button" id="cal-next" class="btn-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+        </div>
+        <div class="calendar-weekdays">
+          <span>MO</span><span>DI</span><span>MI</span><span>DO</span><span>FR</span><span>SA</span><span>SO</span>
+        </div>
+        <div class="calendar-grid" id="calendar-grid"></div>
+      </div>
+    </section>
   </main>
 </div>
 
@@ -176,6 +199,13 @@
         <div class="tag-create" id="tag-create" hidden>
           <input type="text" id="new-tag-name" placeholder="Name, z.B. Training" maxlength="24">
           <div class="tag-swatches" id="tag-swatches"></div>
+          <label class="switch-row">
+            <span class="switch-label">Nach Abschluss nach Notizen fragen</span>
+            <span class="switch">
+              <input type="checkbox" id="tag-reflect-toggle">
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+            </span>
+          </label>
           <div class="tag-create-actions">
             <button type="button" id="tag-create-cancel" class="btn-icon">&times;</button>
             <button type="button" id="tag-create-confirm" class="btn-hud primary">Tag hinzufügen</button>
@@ -258,6 +288,38 @@
           <span class="theme-desc">Klar &amp; Professionell</span>
         </button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- DAY DETAIL MODAL -->
+<div id="day-modal" class="modal-overlay" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="day-modal-title">--</h3>
+      <button id="day-modal-close" class="btn-icon">&times;</button>
+    </div>
+    <button type="button" id="day-modal-add" class="btn-hud" style="margin-bottom: 14px;">+ NEUE AUFGABE</button>
+    <ul id="day-modal-list" class="task-list"></ul>
+    <div id="day-modal-empty" class="empty-state" hidden>Keine Aufgaben an diesem Tag.</div>
+  </div>
+</div>
+
+<!-- REFLECTION MODAL -->
+<div id="reflection-modal" class="modal-overlay" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <h3>WIE WAR'S?</h3>
+      <button id="reflection-modal-close" class="btn-icon">&times;</button>
+    </div>
+    <p class="settings-hint" id="reflection-modal-subtitle">--</p>
+    <label class="field">
+      <span>Notizen</span>
+      <textarea id="reflection-text" rows="4" placeholder="Wie ist es gelaufen, wie ging es dir dabei..."></textarea>
+    </label>
+    <div class="modal-actions">
+      <button type="button" id="reflection-skip" class="btn-hud">ÜBERSPRINGEN</button>
+      <button type="button" id="reflection-save" class="btn-hud primary">SPEICHERN</button>
     </div>
   </div>
 </div>
