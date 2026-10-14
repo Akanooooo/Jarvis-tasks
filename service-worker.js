@@ -1,4 +1,4 @@
-const CACHE = 'jarvis-tasks-v16';
+const CACHE = 'jarvis-tasks-v17';
 const ASSETS = [
   './',
   './index.html',
@@ -10,8 +10,20 @@ const ASSETS = [
   './icons/icon-512.png'
 ];
 
+async function cacheAssetsFresh() {
+  const cache = await caches.open(CACHE);
+  await Promise.all(ASSETS.map(async (url) => {
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      await cache.put(url, res);
+    } catch (err) {
+      // offline during install; cached copy (if any) stays as-is
+    }
+  }));
+}
+
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));
+  e.waitUntil(cacheAssetsFresh());
   self.skipWaiting();
 });
 
@@ -25,7 +37,7 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request, { cache: 'no-store' })
       .then((res) => {
         const copy = res.clone();
         caches.open(CACHE).then((c) => c.put(e.request, copy));
