@@ -281,6 +281,14 @@
     return outputArray;
   }
 
+  function localDateTimeToIso(dateStr, timeStr) {
+    // Built from the browser's own local timezone (correct for the user),
+    // then serialized to an unambiguous UTC instant for the server.
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const [h, min] = timeStr.split(':').map(Number);
+    return new Date(y, m - 1, d, h, min, 0).toISOString();
+  }
+
   function buildReminders() {
     const reminders = [];
     const today = todayStr();
@@ -295,11 +303,11 @@
           const dateStr = toDateStr(d);
           const wd = weekdayMon0(d);
           if (t.weekdays.includes(wd) && !isDoneOn(t, dateStr)) {
-            reminders.push({ id: `${t.id}:${dateStr}`, title: t.title, date: dateStr, time: t.time });
+            reminders.push({ id: `${t.id}:${dateStr}`, title: t.title, dueAt: localDateTimeToIso(dateStr, t.time) });
           }
         }
       } else if (t.date >= today && !t.done) {
-        reminders.push({ id: t.id, title: t.title, date: t.date, time: t.time });
+        reminders.push({ id: t.id, title: t.title, dueAt: localDateTimeToIso(t.date, t.time) });
       }
     });
     return reminders;
